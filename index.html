@@ -312,6 +312,22 @@ aside.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radiu
   .goals-grid { grid-template-columns: 1fr; }
   .tab-btn { padding: 7px 10px; font-size: 0.67rem; }
 }
+
+/* ── Global Search Results ──────────────────────────────────────────────── */
+.srch-results-wrap { max-width:1400px; margin:0 auto; padding:32px 40px 60px; }
+.srch-section-hdr { font-family:'Cormorant Garamond',Georgia,serif; font-size:1.5rem; color:var(--accent2); margin:40px 0 16px; padding-bottom:10px; border-bottom:2px solid var(--border); }
+.srch-section-hdr:first-child { margin-top:0; }
+.srch-count-badge { font-size:0.78rem; font-weight:700; background:var(--accent-light); color:var(--accent); padding:2px 9px; border-radius:10px; margin-left:8px; vertical-align:middle; font-family:'DM Sans',Arial,sans-serif; }
+.srch-no-results { text-align:center; padding:80px 20px; color:var(--text-muted); font-size:1rem; }
+.srch-faqs { display:flex; flex-direction:column; gap:10px; }
+.srch-faq-item { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px 20px; }
+.srch-faq-q { font-weight:600; color:var(--text); margin-bottom:6px; font-size:0.92rem; }
+.srch-faq-a { color:var(--text-muted); font-size:0.85rem; line-height:1.6; }
+/* Search clear button */
+.search-clear-btn { background:none; border:none; color:rgba(255,255,255,0.65); cursor:pointer; font-size:1.15rem; padding:0 6px 0 2px; line-height:1; display:none; flex-shrink:0; }
+.search-clear-btn:hover { color:#fff; }
+@media (max-width:900px) { .srch-results-wrap { padding:24px 20px 40px; } }
+@media (max-width:540px) { .srch-results-wrap { padding:16px 12px 40px; } }
 </style>
 </head>
 <body>
@@ -325,7 +341,7 @@ aside.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radiu
       <div class="header-center">
         <div class="search-wrap" id="search-wrap">
           <span class="search-icon">&#128269;</span>
-          <input type="text" id="search-input" placeholder="Search products, ingredients, concerns&hellip;" oninput="handleSearch()">
+          <input type="text" id="search-input" placeholder="Search products, ingredients, concerns&hellip;" oninput="handleSearch()" autocomplete="off"><button class="search-clear-btn" id="search-clear-btn" onclick="clearGlobalSearch()" title="Clear search">&#x2715;</button>
         </div>
         <span class="result-count" id="result-count"></span>
       </div>
@@ -1465,19 +1481,24 @@ function hit(p,cat,goal,con,q,st){
 function esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function card(p){
+function hlEsc(s,q){
+  var e=esc(s);
+  if(!q)return e;
+  return e.replace(new RegExp(escRe(esc(q)),'gi'),'<mark class="faq-hl">$&</mark>');
+}
+function card(p,q){
   var sb=p.skus.map(function(s){return '<span class="sku-badge">'+esc(s)+'</span>'}).join('');
   var stb=p.st.map(function(t){return '<span class="sku-badge">'+esc(t)+'</span>'}).join('');
-  var ing=p.ing.map(function(i){return '<div class="ingredient-item"><span class="ingredient-name">'+esc(i.n)+'</span><span class="ingredient-desc"> &mdash; '+esc(i.d)+'</span></div>'}).join('');
+  var ing=p.ing.map(function(i){return '<div class="ingredient-item"><span class="ingredient-name">'+hlEsc(i.n,q)+'</span><span class="ingredient-desc"> &mdash; '+hlEsc(i.d,q)+'</span></div>'}).join('');
   return '<div class="product-card">'
-    +'<div class="card-header"><div><span class="card-code">'+esc(p.id)+'</span><h3 class="card-title">'+esc(p.name)+'</h3></div>'
+    +'<div class="card-header"><div><span class="card-code">'+esc(p.id)+'</span><h3 class="card-title">'+hlEsc(p.name,q)+'</h3></div>'
     +'<span class="goal-tag" style="background:var(--tag-'+p.gc+'-bg);color:var(--tag-'+p.gc+')">'+esc(p.goal)+'</span></div>'
     +'<div class="card-body">'
-    +'<div class="card-section-label">Targeted Concerns</div><p class="concerns-text">'+esc(p.con.join(', '))+'</p>'
-    +'<div class="card-section-label">Benefits</div><p class="benefits-text">'+esc(p.ben)+'</p>'
+    +'<div class="card-section-label">Targeted Concerns</div><p class="concerns-text">'+hlEsc(p.con.join(', '),q)+'</p>'
+    +'<div class="card-section-label">Benefits</div><p class="benefits-text">'+hlEsc(p.ben,q)+'</p>'
     +'<div class="card-section-label">SKU / Size</div><div class="sku-row">'+sb+'</div>'
     +'<div class="card-section-label">Skin Type</div><div class="sku-row">'+stb+'</div>'
-    +'<div class="sales-tip">&#128161; '+esc(p.tip)+'</div>'
+    +'<div class="sales-tip">&#128161; '+hlEsc(p.tip,q)+'</div>'
     +'<button class="ingredients-toggle" onclick="tIng(\''+p.id+'\')"><span id="ii-'+p.id+'">+</span> Active Ingredients</button>'
     +'<div class="ingredients-panel" id="ip-'+p.id+'">'+ing+'</div>'
     +'</div></div>';
@@ -1493,7 +1514,7 @@ function render(){
   cO.forEach(function(cat){
     if(!by[cat]) return;
     h+='<div class="category-group"><h2 class="category-title">'+esc(cat)+'</h2><div class="product-grid">';
-    by[cat].forEach(function(p){h+=card(p)});
+    by[cat].forEach(function(p){h+=card(p,aQ)});
     h+='</div></div>';
   });
   c.innerHTML=h;
@@ -1611,8 +1632,87 @@ function clearFAQSearch(){
 function toggleSection(hdr){
   hdr.classList.toggle('collapsed');
 }
-function handleSearch(){aQ=document.getElementById('search-input').value.trim();upd();render();}
+function handleSearch(){
+  aQ=document.getElementById('search-input').value.trim();
+  var clr=document.getElementById('search-clear-btn');
+  if(clr)clr.style.display=aQ?'inline':'none';
+  if(aQ){globalSearch(aQ);}else{clearGlobalSearch();}
+}
+function clearGlobalSearch(){
+  aQ='';
+  var inp=document.getElementById('search-input');if(inp)inp.value='';
+  var clr=document.getElementById('search-clear-btn');if(clr)clr.style.display='none';
+  document.getElementById('result-count').textContent='';
+  // restore Products tab
+  document.querySelectorAll('.page-section').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('tab-products').classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('.tab-btn').classList.add('active');
+  upd();render();
+}
+function globalSearch(q){
+  var ql=q.toLowerCase().trim();
+  if(!ql){clearGlobalSearch();return;}
+  // ── Products ──
+  var pRes=P.filter(function(p){
+    var s=(p.name+' '+p.cat+' '+p.goal+' '+p.ben+' '+p.con.join(' ')+' '+(p.tip||'')+' '+p.ing.map(function(i){return i.n+' '+i.d;}).join(' ')).toLowerCase();
+    return s.indexOf(ql)>-1;
+  });
+  // ── Ingredients ──
+  var iRes=INGREDIENTS.filter(function(ing){
+    var s=(ing.name+' '+(ing.aka||'')+' '+ing.what+' '+(ing.say?ing.say.replace(/<[^>]+>/g,' '):'').trim()+' '+ing.benefits.join(' ')).toLowerCase();
+    return s.indexOf(ql)>-1;
+  });
+  // ── FAQs ──
+  var fRes=[];
+  document.querySelectorAll('#tab-faqs .accordion-item').forEach(function(item){
+    var qEl=item.querySelector('.accordion-btn-inner');
+    var aEl=item.querySelector('.faq-answer');
+    var txt=((qEl?qEl.textContent:'')+' '+(aEl?aEl.textContent:'')).toLowerCase();
+    if(txt.indexOf(ql)>-1){
+      if(qEl&&!qEl.dataset.orig)qEl.dataset.orig=qEl.innerHTML;
+      if(aEl&&!aEl.dataset.orig)aEl.dataset.orig=aEl.innerHTML;
+      fRes.push({q:qEl?qEl.dataset.orig||qEl.innerHTML:'',a:aEl?aEl.dataset.orig||aEl.innerHTML:''});
+    }
+  });
+  var total=pRes.length+iRes.length+fRes.length;
+  var parts=[];
+  if(pRes.length)parts.push(pRes.length+' product'+(pRes.length!==1?'s':''));
+  if(iRes.length)parts.push(iRes.length+' ingredient'+(iRes.length!==1?'s':''));
+  if(fRes.length)parts.push(fRes.length+' FAQ'+(fRes.length!==1?'s':''));
+  document.getElementById('result-count').textContent=total?parts.join(' · '):'No results';
+  // activate global panel
+  document.querySelectorAll('.page-section').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('tab-global').classList.add('active');
+  // build HTML
+  var h='';
+  if(!total){
+    h='<div class="srch-no-results">No results found for &ldquo;'+esc(q)+'&rdquo;. Try a different keyword.</div>';
+  } else {
+    if(pRes.length){
+      h+='<h2 class="srch-section-hdr">Products <span class="srch-count-badge">'+pRes.length+'</span></h2><div class="product-grid">';
+      pRes.forEach(function(p){h+=card(p,q);});
+      h+='</div>';
+    }
+    if(iRes.length){
+      h+='<h2 class="srch-section-hdr">Active Ingredients <span class="srch-count-badge">'+iRes.length+'</span></h2><div class="ing-grid">';
+      iRes.forEach(function(ing){h+=buildIngCard(ing,q);});
+      h+='</div>';
+    }
+    if(fRes.length){
+      h+='<h2 class="srch-section-hdr">FAQs <span class="srch-count-badge">'+fRes.length+'</span></h2><div class="srch-faqs">';
+      fRes.forEach(function(item){
+        h+='<div class="srch-faq-item"><div class="srch-faq-q">'+hlText(item.q,q)+'</div><div class="srch-faq-a">'+hlText(item.a,q)+'</div></div>';
+      });
+      h+='</div>';
+    }
+  }
+  document.getElementById('srch-results-wrap').innerHTML=h;
+}
 function showTab(btn,id){
+  // clear any active global search
+  if(aQ){aQ='';var inp=document.getElementById('search-input');if(inp)inp.value='';var clr=document.getElementById('search-clear-btn');if(clr)clr.style.display='none';document.getElementById('result-count').textContent='';}
   document.querySelectorAll('.page-section').forEach(function(s){s.classList.remove('active')});
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
   document.getElementById('tab-'+id).classList.add('active');
@@ -1638,121 +1738,121 @@ upd();render();
 var INGREDIENTS=[
   {name:'Alpha Arbutin',aka:'β-Arbutin',benefits:['brighten'],
    what:'A melanin-inhibiting compound that blocks tyrosinase—the enzyme responsible for pigment production—to fade dark spots, post-acne marks, and hyperpigmentation. Safe for all skin tones including deeper complexions.',
-   say:'<strong>Tell a customer:</strong> "It targets the root cause of dark spots by stopping your skin from making extra pigment. Gentler than kojic acid and safe for all skin tones."'},
+   say:'<strong>What this means for you:</strong> "It targets the root cause of dark spots by stopping your skin from making extra pigment. Gentler than kojic acid and safe for all skin tones."'},
   {name:'Allantoin',aka:'',benefits:['calm','repair'],
    what:'A soothing compound that hydrates, promotes cell regeneration, and has excellent tolerability. Reduces irritation and redness while accelerating the skin\'s natural healing process.',
-   say:'<strong>Tell a customer:</strong> "It calms and repairs — great for skin that needs gentle recovery without any harshness."'},
+   say:'<strong>What this means for you:</strong> "It calms and repairs — great for skin that needs gentle recovery without any harshness."'},
   {name:'Aloe Vera',aka:'Aloe Barbadensis Leaf Extract',benefits:['hydrate','calm'],
    what:'A natural humectant and anti-inflammatory gel that delivers rapid hydration and soothes irritated, dry, or sun-exposed skin. Rich in polysaccharides that support the skin\'s moisture barrier.',
-   say:'<strong>Tell a customer:</strong> "Think of it as nature\'s cooling moisturizer — it hydrates and calms at the same time."'},
+   say:'<strong>What this means for you:</strong> "Think of it as nature\'s cooling moisturizer — it hydrates and calms at the same time."'},
   {name:'Backuchiol',aka:'Plant Retinol Alternative',benefits:['rewind'],
    what:'A plant-derived compound from the Psoralea corylifolia plant that mimics retinol\'s collagen-stimulating and cell-renewal effects with significantly less irritation, redness, and photosensitivity.',
-   say:'<strong>Tell a customer:</strong> "It works like retinol — reducing fine lines and firming skin — but without the dryness or peeling. Safe for sensitive skin types and pregnancy (unlike retinol)."'},
+   say:'<strong>What this means for you:</strong> "It works like retinol — reducing fine lines and firming skin — but without the dryness or peeling. Safe for sensitive skin types and pregnancy (unlike retinol)."'},
   {name:'Calendula',aka:'Calendula Officinalis Extract',benefits:['calm'],
    what:'A golden-flower botanical with potent anti-inflammatory and antibacterial properties. Soothes redness, accelerates wound healing, and helps reduce flare-ups in reactive or easily irritated skin.',
-   say:'<strong>Tell a customer:</strong> "It\'s like a botanical first-aid for your skin — calms redness and helps skin recover faster."'},
+   say:'<strong>What this means for you:</strong> "It\'s like a botanical first-aid for your skin — calms redness and helps skin recover faster."'},
   {name:'Centella Asiatica',aka:'Cica / Gotu Kola',benefits:['calm','repair'],
    what:'A medicinal herb with multi-action benefits: soothes inflammation, promotes wound healing, stimulates collagen synthesis, and strengthens a weakened skin barrier. Used at high concentrations (up to 82%) in barrier-repair formulas.',
-   say:'<strong>Tell a customer:</strong> "Cica is the ingredient K-beauty built its reputation on. It calms, heals, and strengthens the skin barrier — great for anyone whose skin is reactive or recovering."'},
+   say:'<strong>What this means for you:</strong> "Cica is the ingredient K-beauty built its reputation on. It calms, heals, and strengthens the skin barrier — great for anyone whose skin is reactive or recovering."'},
   {name:'Ceramide',aka:'Ceramide NP / Skin Lipid',benefits:['repair','hydrate'],
    what:'Lipid molecules that naturally exist in the skin\'s outermost layer. They hold skin cells together, lock in moisture, and form the primary defense against environmental stressors. Depleted by over-exfoliation, harsh cleansers, or aging.',
-   say:'<strong>Tell a customer:</strong> "Think of ceramides as the \'mortar\' between skin cells. When the barrier is damaged — tight, flaky, or reactive — ceramides rebuild it."'},
+   say:'<strong>What this means for you:</strong> "Think of ceramides as the \'mortar\' between skin cells. When the barrier is damaged — tight, flaky, or reactive — ceramides rebuild it."'},
   {name:'Chamomile',aka:'Chamomilla Recutita Extract',benefits:['calm'],
    what:'A gentle botanical rich in bisabolol and apigenin — both known for anti-inflammatory and antioxidant properties. Calms redness, soothes reactive skin, and provides a mild brightening effect.',
-   say:'<strong>Tell a customer:</strong> "That chamomile-tea feeling for your skin. Calms redness and irritation without any active ingredients — perfect for very sensitive types."'},
+   say:'<strong>What this means for you:</strong> "That chamomile-tea feeling for your skin. Calms redness and irritation without any active ingredients — perfect for very sensitive types."'},
   {name:'Cucumber Extract',aka:'Cucumis Sativus Fruit Extract',benefits:['hydrate','calm'],
    what:'A lightweight hydrating extract that refreshes, soothes, and helps reduce puffiness and redness. Particularly effective in toners and eye-area products for its cooling, soothing effect.',
-   say:'<strong>Tell a customer:</strong> "Cooling, calming hydration. Great for skin that feels tired or puffy."'},
+   say:'<strong>What this means for you:</strong> "Cooling, calming hydration. Great for skin that feels tired or puffy."'},
   {name:'Ferulic Acid',aka:'',benefits:['protect'],
    what:'A plant-based antioxidant that neutralizes free radicals and — critically — stabilizes and doubles the antioxidant efficacy of Vitamins C and E when combined. A synergist ingredient rather than a standalone active.',
-   say:'<strong>Tell a customer:</strong> "It makes Vitamin C work harder and last longer. Like a booster for your antioxidant protection."'},
+   say:'<strong>What this means for you:</strong> "It makes Vitamin C work harder and last longer. Like a booster for your antioxidant protection."'},
   {name:'Galactomyces Ferment Filtrate',aka:'GFF / Glass Skin Ingredient',benefits:['brighten','clarify'],
    what:'A yeast-derived ferment filtrate that brightens, minimizes pores, improves texture, and promotes a glassy, luminous skin appearance. Popular in Korean skincare for its light-weight yet highly effective brightening action.',
-   say:'<strong>Tell a customer:</strong> "The ingredient behind the Korean \'glass skin\' look — it brightens and blurs pores simultaneously."'},
+   say:'<strong>What this means for you:</strong> "The ingredient behind the Korean \'glass skin\' look — it brightens and blurs pores simultaneously."'},
   {name:'Glutathione',aka:'S-Acetyl Glutathione',benefits:['brighten'],
    what:'The body\'s master antioxidant. Applied topically, it inhibits melanin production and neutralizes oxidative damage, addressing dullness, uneven tone, and pigmentation from within. S-Acetyl form has enhanced skin penetration.',
-   say:'<strong>Tell a customer:</strong> "Glutathione works from inside the cell to brighten — it\'s the same ingredient many Filipinos take as a supplement, now applied directly to the skin."'},
+   say:'<strong>What this means for you:</strong> "Glutathione works from inside the cell to brighten — it\'s the same ingredient many Filipinos take as a supplement, now applied directly to the skin."'},
   {name:'Glycerin',aka:'Glycerol / Humectant',benefits:['hydrate'],
    what:'One of the most effective and well-researched humectants in skincare. Draws water molecules from the air and deeper skin layers into the outermost layer, softening and plumping the skin without feeling greasy.',
-   say:'<strong>Tell a customer:</strong> "A moisture magnet. It pulls water into the skin and keeps it there — a staple in every hydrating formula."'},
+   say:'<strong>What this means for you:</strong> "A moisture magnet. It pulls water into the skin and keeps it there — a staple in every hydrating formula."'},
   {name:'Glycolic Acid',aka:'AHA — Alpha Hydroxy Acid',benefits:['renew'],
    what:'The smallest and most penetrating AHA molecule, derived from sugar cane. Dissolves the bonds between dead skin cells for deep exfoliation, improving texture, tone, and clarity. Most potent AHA; start low and slow.',
-   say:'<strong>Tell a customer:</strong> "It dissolves dead skin instead of scrubbing — smoother skin and brighter tone without the irritation of physical exfoliation."'},
+   say:'<strong>What this means for you:</strong> "It dissolves dead skin instead of scrubbing — smoother skin and brighter tone without the irritation of physical exfoliation."'},
   {name:'Green Tea Extract',aka:'EGCG / Camellia Sinensis',benefits:['protect','calm'],
    what:'Rich in epigallocatechin gallate (EGCG) — a powerful antioxidant that protects against UV-induced oxidative damage, reduces sebum production, and soothes inflammation. A versatile protective and calming active.',
-   say:'<strong>Tell a customer:</strong> "Antioxidant protection and oil control in one. Great for oily skin that is also reactive."'},
+   say:'<strong>What this means for you:</strong> "Antioxidant protection and oil control in one. Great for oily skin that is also reactive."'},
   {name:'Hyaluronic Acid',aka:'HA / Sodium Hyaluronate',benefits:['hydrate'],
    what:'A naturally occurring polysaccharide that can hold up to 1,000× its weight in water. Multi-weight formulas (small and large molecules) deliver hydration at different skin depths — surface plumping down to deep moisture binding.',
-   say:'<strong>Tell a customer:</strong> "It acts like a sponge inside your skin — draws in water and holds it there for an all-day plump effect. Suitable for every skin type, even oily."'},
+   say:'<strong>What this means for you:</strong> "It acts like a sponge inside your skin — draws in water and holds it there for an all-day plump effect. Suitable for every skin type, even oily."'},
   {name:'Jeju Aloe',aka:'Premium Aloe / Aloe from Korea',benefits:['hydrate','calm'],
    what:'Aloe Vera sourced from Jeju Island, South Korea — known for its purity, high polysaccharide content, and exceptional calming and hydrating properties. Used as a base ingredient in Korean skincare for intensive moisture delivery.',
-   say:'<strong>Tell a customer:</strong> "The same premium aloe in high-end K-beauty products. Deep hydration with a very soothing, non-sticky feel."'},
+   say:'<strong>What this means for you:</strong> "The same premium aloe in high-end K-beauty products. Deep hydration with a very soothing, non-sticky feel."'},
   {name:'Kojic Acid',aka:'Kojic Acid Dipalmitate (stable form)',benefits:['brighten'],
    what:'A melanin inhibitor derived from fungi during the fermentation process. Lightens dark spots, sun damage, and age spots by blocking tyrosinase. Kojic Acid Dipalmitate is the stabilized form — gentler and less likely to cause irritation.',
-   say:'<strong>Tell a customer:</strong> "A classic brightening ingredient that lightens existing dark spots — the stable form in our products means less risk of the stinging that plain kojic acid can cause."'},
+   say:'<strong>What this means for you:</strong> "A classic brightening ingredient that lightens existing dark spots — the stable form in our products means less risk of the stinging that plain kojic acid can cause."'},
   {name:'Licorice Root Extract',aka:'Glabridin / Glycyrrhiza Glabra',benefits:['brighten','calm'],
    what:'Contains Glabridin — a potent melanin inhibitor that is also strongly anti-inflammatory. Addresses hyperpigmentation while simultaneously calming redness, making it ideal for skin with both pigmentation and sensitivity.',
-   say:'<strong>Tell a customer:</strong> "It brightens and calms at the same time — perfect for customers with dark spots who also have reactive or sensitive skin."'},
+   say:'<strong>What this means for you:</strong> "It brightens and calms at the same time — perfect for customers with dark spots who also have reactive or sensitive skin."'},
   {name:'Madecassoside',aka:'Centella Asiatica Derivative',benefits:['repair','calm'],
    what:'An isolated active compound from Centella Asiatica. Specifically targets wound healing and collagen synthesis while providing strong barrier-strengthening and anti-inflammatory benefits. More concentrated effect than whole Cica extract.',
-   say:'<strong>Tell a customer:</strong> "The most active healing part of Cica, extracted and concentrated. Great for scarring, barrier damage, or any skin that needs structural repair."'},
+   say:'<strong>What this means for you:</strong> "The most active healing part of Cica, extracted and concentrated. Great for scarring, barrier damage, or any skin that needs structural repair."'},
   {name:'Malic Acid',aka:'Apple-derived AHA',benefits:['renew'],
    what:'A gentle AHA derived from apples with a larger molecular size than Glycolic Acid, meaning slower penetration and lower irritation potential. Exfoliates dead skin cells, brightens tone, and is suitable for first-time AHA users.',
-   say:'<strong>Tell a customer:</strong> "A beginner-friendly exfoliating acid from apples — same brightening and smoothing benefits as stronger acids, but gentler on skin."'},
+   say:'<strong>What this means for you:</strong> "A beginner-friendly exfoliating acid from apples — same brightening and smoothing benefits as stronger acids, but gentler on skin."'},
   {name:'Mandelic Acid',aka:'Almond-derived AHA',benefits:['renew'],
    what:'The largest AHA molecule — its slow penetration rate makes it the gentlest exfoliating acid. Suitable for sensitive skin, first-time users, and deeper skin tones. Also has antimicrobial properties that help with acne-related congestion.',
-   say:'<strong>Tell a customer:</strong> "The gentlest exfoliating acid — ideal if they\'ve been told their skin is \'too sensitive\' for acids. Works at the surface without going too deep."'},
+   say:'<strong>What this means for you:</strong> "The gentlest exfoliating acid — ideal if they\'ve been told their skin is \'too sensitive\' for acids. Works at the surface without going too deep."'},
   {name:'Niacinamide',aka:'Vitamin B3 / Nicotinamide',benefits:['clarify','brighten','repair'],
    what:'The most versatile multi-benefit active in modern skincare. At 10%: minimizes pores, controls sebum, brightens, and strengthens the barrier. At 5%: same benefits, calmer delivery for sensitive skin. At 2%: barrier support with gentle brightening.',
-   say:'<strong>Tell a customer:</strong> "Niacinamide does almost everything — shrinks pores, controls oil, fades dark marks, and strengthens the skin barrier. It\'s the active that works for almost everyone."'},
+   say:'<strong>What this means for you:</strong> "Niacinamide does almost everything — shrinks pores, controls oil, fades dark marks, and strengthens the skin barrier. It\'s the active that works for almost everyone."'},
   {name:'Oat Extract',aka:'Avena Sativa / Colloidal Oat',benefits:['calm','repair'],
    what:'Rich in beta-glucan, a soothing polysaccharide that reduces itching, redness, and inflammation. Strengthens the skin barrier, supports hydration, and is clinically recognized for use in eczema and reactive skin care.',
-   say:'<strong>Tell a customer:</strong> "The same ingredient recommended by dermatologists for eczema-prone skin. Deeply calming — great for any skin that\'s red, itchy, or reactive."'},
+   say:'<strong>What this means for you:</strong> "The same ingredient recommended by dermatologists for eczema-prone skin. Deeply calming — great for any skin that\'s red, itchy, or reactive."'},
   {name:'Papaya Extract',aka:'Papain Enzyme',benefits:['renew'],
    what:'Contains Papain — a naturally occurring proteolytic enzyme that dissolves the protein bonds holding dead skin cells together, enabling gentle chemical exfoliation without acids. Also rich in vitamins A, C, and E.',
-   say:'<strong>Tell a customer:</strong> "Natural fruit enzymes from papaya gently melt away dead skin. No acids, no tingle — just a gradual smoothing and brightening effect."'},
+   say:'<strong>What this means for you:</strong> "Natural fruit enzymes from papaya gently melt away dead skin. No acids, no tingle — just a gradual smoothing and brightening effect."'},
   {name:'Peptides',aka:'Signal Peptides / Amino Acid Chains',benefits:['rewind'],
    what:'Short chains of amino acids that act as biological signals, instructing the skin to produce more collagen and elastin. Different peptide types target different concerns: firming, smoothing fine lines, or improving skin density and resilience.',
-   say:'<strong>Tell a customer:</strong> "Peptides are like \'messages\' your skin sends to produce more collagen. Over time, they firm, lift, and fill in fine lines."'},
+   say:'<strong>What this means for you:</strong> "Peptides are like \'messages\' your skin sends to produce more collagen. Over time, they firm, lift, and fill in fine lines."'},
   {name:'Potassium Azeloyl Diglycinate',aka:'PAD / Stabilized Azelaic Acid',benefits:['clarify','brighten'],
    what:'A water-soluble, stabilized derivative of Azelaic Acid. Addresses acne, excess sebum, post-inflammatory hyperpigmentation (PIH), and rosacea-related redness. More tolerable than standard azelaic acid with equivalent anti-inflammatory benefits.',
-   say:'<strong>Tell a customer:</strong> "It targets both active breakouts and the dark marks they leave behind — and it\'s gentler than most acne actives."'},
+   say:'<strong>What this means for you:</strong> "It targets both active breakouts and the dark marks they leave behind — and it\'s gentler than most acne actives."'},
   {name:'Retinol / Retinyl Palmitate',aka:'Vitamin A Derivative',benefits:['rewind'],
    what:'The gold-standard anti-aging active. Accelerates cell turnover, stimulates collagen production, reduces fine lines, and addresses hyperpigmentation. Retinyl Palmitate is the esterified, gentler form; Microencapsulated Retinol releases gradually for reduced irritation. PM use only. Not for use during pregnancy.',
-   say:'<strong>Tell a customer:</strong> "The most studied anti-aging ingredient in skincare history. It speeds up how fast your skin renews itself — smoother texture, fewer fine lines, and a more even tone. Evening use only, and SPF every morning is non-negotiable."'},
+   say:'<strong>What this means for you:</strong> "The most studied anti-aging ingredient in skincare history. It speeds up how fast your skin renews itself — smoother texture, fewer fine lines, and a more even tone. Evening use only, and SPF every morning is non-negotiable."'},
   {name:'Rosehip Oil',aka:'Rosa Canina Seed Oil',benefits:['rewind','repair'],
    what:'Cold-pressed oil rich in beta-carotene (a Vitamin A precursor), linoleic acid, and antioxidants. Supports collagen synthesis, barrier repair, and gradual improvement of fine lines and pigmentation. Non-comedogenic.',
-   say:'<strong>Tell a customer:</strong> "A natural face oil that improves fine lines and brightens skin over time — without clogging pores. Great for dry or mature skin."'},
+   say:'<strong>What this means for you:</strong> "A natural face oil that improves fine lines and brightens skin over time — without clogging pores. Great for dry or mature skin."'},
   {name:'Sakura Extract',aka:'Cherry Blossom Extract',benefits:['brighten'],
    what:'A brightening botanical derived from Japanese cherry blossoms. Contains hydroxycinnamic acid derivatives that inhibit melanin formation and improve overall skin radiance and luminosity.',
-   say:'<strong>Tell a customer:</strong> "A Japanese botanical that gives skin a subtle, natural glow — great for customers who want brightening without the intensity of strong actives."'},
+   say:'<strong>What this means for you:</strong> "A Japanese botanical that gives skin a subtle, natural glow — great for customers who want brightening without the intensity of strong actives."'},
   {name:'Salicylic Acid',aka:'BHA — Beta Hydroxy Acid',benefits:['clarify','renew'],
    what:'An oil-soluble exfoliating acid that penetrates deep into pores — unlike water-soluble AHAs. Dissolves sebum plugs, clears congestion, reduces acne-causing bacteria, and minimizes the appearance of pores. Anti-inflammatory at low concentrations.',
-   say:'<strong>Tell a customer:</strong> "The only acid that gets inside the pore to clean it out. Essential for anyone dealing with blackheads, whiteheads, or regular breakouts."'},
+   say:'<strong>What this means for you:</strong> "The only acid that gets inside the pore to clean it out. Essential for anyone dealing with blackheads, whiteheads, or regular breakouts."'},
   {name:'Snail Mucin',aka:'Snail Secretion Filtrate',benefits:['hydrate','repair'],
    what:'A bioactive secretion containing glycoproteins, Hyaluronic Acid, glycolic acid, and zinc — a naturally occurring blend that delivers hydration, promotes skin regeneration, improves texture, and fades marks. Popularized by Korean skincare.',
-   say:'<strong>Tell a customer:</strong> "It sounds unusual but snail mucin is one of K-beauty\'s most iconic ingredients. It deeply hydrates, speeds up skin repair, and fades acne marks over time."'},
+   say:'<strong>What this means for you:</strong> "It sounds unusual but snail mucin is one of K-beauty\'s most iconic ingredients. It deeply hydrates, speeds up skin repair, and fades acne marks over time."'},
   {name:'Tea Tree',aka:'Melaleuca Alternifolia Leaf Oil',benefits:['clarify'],
    what:'An antimicrobial essential oil that specifically targets Cutibacterium acnes — the primary acne-causing bacteria. Reduces inflammation around active breakouts and helps prevent new ones. Use in targeted formulas, not all-over.',
-   say:'<strong>Tell a customer:</strong> "Nature\'s spot treatment — it fights the bacteria that cause acne and reduces the redness and swelling around breakouts."'},
+   say:'<strong>What this means for you:</strong> "Nature\'s spot treatment — it fights the bacteria that cause acne and reduces the redness and swelling around breakouts."'},
   {name:'Tranexamic Acid',aka:'TXA',benefits:['brighten'],
    what:'A synthetic amino acid derivative that targets a different pathway in melanin production than Arbutin or Kojic Acid. Particularly effective against stubborn pigmentation, melasma, and sun-induced dark spots that do not respond well to other brightening actives.',
-   say:'<strong>Tell a customer:</strong> "For stubborn dark spots that other brightening products haven\'t shifted — Tranexamic Acid targets a different pathway, so it works when the others haven\'t."'},
+   say:'<strong>What this means for you:</strong> "For stubborn dark spots that other brightening products haven\'t shifted — Tranexamic Acid targets a different pathway, so it works when the others haven\'t."'},
   {name:'Vitamin B5',aka:'Panthenol / D-Panthenol',benefits:['repair','hydrate'],
    what:'A provitamin that converts to pantothenic acid in the skin. Acts as a deep humectant, attracting and binding water; promotes wound healing and reduces inflammation. Often paired with ceramides in barrier-repair formulas.',
-   say:'<strong>Tell a customer:</strong> "Deeply hydrating and healing — great for dry, cracked, or irritated skin. Works with ceramides to rebuild the barrier from the inside."'},
+   say:'<strong>What this means for you:</strong> "Deeply hydrating and healing — great for dry, cracked, or irritated skin. Works with ceramides to rebuild the barrier from the inside."'},
   {name:'Vitamin C',aka:'L-Ascorbic Acid / 3-O-Ethyl Ascorbic Acid',benefits:['brighten','protect'],
    what:'The most potent antioxidant in skincare. Inhibits melanin production to brighten, neutralizes free radical damage, and supports collagen synthesis. L-Ascorbic Acid (15%) is the most potent and direct form; 3-O-Ethyl Ascorbic Acid is a more stable derivative. AM use preferred before SPF.',
-   say:'<strong>Tell a customer:</strong> "Vitamin C is your morning armor — it blocks pigment from forming AND protects your skin from pollution and UV damage before SPF goes on. Look for amber packaging, which keeps it from oxidizing."'},
+   say:'<strong>What this means for you:</strong> "Vitamin C is your morning armor — it blocks pigment from forming AND protects your skin from pollution and UV damage before SPF goes on. Look for amber packaging, which keeps it from oxidizing."'},
   {name:'Vitamin E',aka:'Tocopherol',benefits:['protect','repair'],
    what:'A fat-soluble antioxidant that protects cell membranes from oxidative damage, enhances the efficacy of Vitamin C, and supports the skin barrier. Particularly effective when combined with Vitamin C and Ferulic Acid.',
-   say:'<strong>Tell a customer:</strong> "Think of it as Vitamin C\'s best friend — it makes Vitamin C stronger and lasts longer, while also softening and protecting the skin barrier."'},
+   say:'<strong>What this means for you:</strong> "Think of it as Vitamin C\'s best friend — it makes Vitamin C stronger and lasts longer, while also softening and protecting the skin barrier."'},
   {name:'Witch Hazel',aka:'Hamamelis Virginiana Leaf Extract',benefits:['clarify'],
    what:'A natural astringent with anti-inflammatory properties. Tightens pores, controls excess oil production, reduces redness and swelling around breakouts, and provides a refreshing, toning effect without stripping moisture.',
-   say:'<strong>Tell a customer:</strong> "A botanical that tightens pores and controls shine without drying the skin out. Great for oily or combination skin that hates the tight, stripped feeling of harsh toners."'},
+   say:'<strong>What this means for you:</strong> "A botanical that tightens pores and controls shine without drying the skin out. Great for oily or combination skin that hates the tight, stripped feeling of harsh toners."'},
   {name:'Zinc',aka:'Zinc PCA / Zinc Oxide',benefits:['clarify'],
    what:'A mineral active that regulates sebum production, reduces acne-causing bacteria, and has anti-inflammatory properties that calm active breakouts. Also acts as a mineral sunscreen agent when used in SPF formulas.',
-   say:'<strong>Tell a customer:</strong> "Zinc helps regulate the skin\'s oil production at the source — great for persistently shiny or acne-prone skin."'}
+   say:'<strong>What this means for you:</strong> "Zinc helps regulate the skin\'s oil production at the source — great for persistently shiny or acne-prone skin."'}
 ];
 
 var ING_VIEW='az';
@@ -1891,5 +1991,6 @@ showTab=function(btn,id){
   </div>
 </div>
 
+<div class="page-section" id="tab-global"><div class="srch-results-wrap" id="srch-results-wrap"></div></div>
 </body>
 </html>
