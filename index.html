@@ -209,6 +209,109 @@ aside.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radiu
 .ing-say strong { color:var(--accent2); }
 .ing-no-results { display:none; text-align:center; padding:40px 0; color:var(--text-muted); font-size:0.85rem; }
 .ing-hl { background:#FFE566; color:inherit; border-radius:2px; }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 900px) + MOBILE (≤ 540px)
+══════════════════════════════════════════════════════ */
+
+/* ── TABLET ────────────────────────────────────────── */
+@media (max-width: 900px) {
+
+  /* Header */
+  .site-header { padding: 10px 16px 0; }
+  .site-title { font-size: 1rem; }
+  .site-sub { font-size: 0.58rem; }
+
+  /* Tab nav — scrollable row */
+  .tab-nav { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 9px 14px; font-size: 0.75rem; white-space: nowrap; }
+
+  /* Products layout — sidebar stacks above grid */
+  .page-wrap { flex-direction: column; }
+  aside.sidebar { width: 100%; flex: none; position: static; max-height: none; min-height: unset; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0; padding: 10px 12px 12px; }
+  .filter-section { width: auto; }
+  .filter-section-body { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 0 4px; }
+  .filter-btn { font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; }
+
+  /* Product cards */
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; padding: 16px; }
+
+  /* Goals grid */
+  .goals-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+  /* Application guide */
+  .routine-am-pm { grid-template-columns: 1fr; }
+  .routine-col-wrap { grid-template-columns: 1fr; }
+  .skin-type-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+  /* Kits grid */
+  .kits-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+  /* Ingredients grid — 3 columns on tablet */
+  .ing-grid { grid-template-columns: repeat(3, 1fr); }
+  .ing-wrap { padding: 24px 20px 40px; }
+
+  /* Static content */
+  .static-content { padding: 24px 20px 40px; }
+}
+
+/* ── MOBILE ────────────────────────────────────────── */
+@media (max-width: 540px) {
+
+  /* Header */
+  .site-title { font-size: 0.9rem; letter-spacing: 0.12em; }
+  .tab-btn { padding: 8px 12px; font-size: 0.7rem; }
+
+  /* Products sidebar — horizontal scroll chips */
+  aside.sidebar { padding: 8px 10px 10px; }
+  .filter-section-header { font-size: 0.58rem; padding: 5px 10px; }
+
+  /* Product cards — single column */
+  .product-grid { grid-template-columns: 1fr; padding: 12px; }
+
+  /* Goals */
+  .goals-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* Kits — single column */
+  .kits-grid { grid-template-columns: 1fr; }
+
+  /* Ingredients — 2 columns on mobile */
+  .ing-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .ing-wrap { padding: 16px 12px 32px; }
+  .ing-card { padding: 12px 12px 10px; }
+  .ing-card-name { font-size: 0.95rem; }
+  .ing-what { font-size: 0.74rem; }
+  .ing-say { font-size: 0.71rem; padding: 6px 8px; }
+  .ing-controls { flex-direction: column; align-items: stretch; }
+  .ing-search-wrap { min-width: unset; }
+  .ing-count { text-align: center; }
+
+  /* FAQ */
+  .static-content { padding: 16px 14px 32px; }
+  .accordion-btn { font-size: 0.8rem; padding: 11px 14px; }
+  .faq-answer { font-size: 0.8rem; padding: 10px 14px; }
+
+  /* Application guide */
+  .appguide-section { padding: 12px; }
+  .acc-tip { font-size: 0.76rem; }
+
+  /* Kit cards */
+  .kit-card-header { padding: 12px 14px 10px; }
+  .kit-card-body { padding: 10px 14px 12px; }
+  .kit-name { font-size: 1rem; }
+
+  /* Product card detail */
+  .product-card { padding: 14px 14px 12px; }
+  .p-name { font-size: 0.9rem; }
+}
+
+/* ── VERY SMALL (≤ 380px) ──────────────────────────── */
+@media (max-width: 380px) {
+  .ing-grid { grid-template-columns: 1fr; }
+  .goals-grid { grid-template-columns: 1fr; }
+  .tab-btn { padding: 7px 10px; font-size: 0.67rem; }
+}
 </style>
 </head>
 <body>
